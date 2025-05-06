@@ -1,7 +1,10 @@
 import React from "react";
 import dayjs from "dayjs";
 import Image from "next/image";
-import { getRandomInterviewCover } from "@/public/utils";
+import { getRandomInterviewCover } from "@/lib/utils";
+import { Button } from "./ui/button";
+import Link from "next/link";
+import DisplayTechStack from "./DisplayTechStack";
 
 const InterviewCard = ({
   interviewId,
@@ -45,6 +48,24 @@ const InterviewCard = ({
               <Image src={"/star.svg"} alt="star" width={20} height={20} />
               <p className="text-sm">{feedback?.totalScore || "---"}/100</p>
             </div>
+          </div>
+          <p className="line-clamp-2 mt-5">
+            {feedback?.totalScore || "You have not taken this interview"}
+          </p>
+          <div className="flex flex-row justify-between mt-7">
+            <DisplayTechStack techStack={techstack} />
+
+            <Button className="btn-primary">
+              <Link
+                href={
+                  feedback
+                    ? `/interview/${interviewId}/feedback`
+                    : `/interview/${interviewId}`
+                }
+              >
+                {feedback ? "View Feedback" : "Start Interview"}
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
