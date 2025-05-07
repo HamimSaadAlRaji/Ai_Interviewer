@@ -3,7 +3,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBApj_X1c6nHPn624lG6i4nD3aQ5_5a8lM",
+  apiKey: process.env.FIREBASE_API_KEY,
   authDomain: "ai-interviewer-6a766.firebaseapp.com",
   projectId: "ai-interviewer-6a766",
   storageBucket: "ai-interviewer-6a766.firebasestorage.app",
