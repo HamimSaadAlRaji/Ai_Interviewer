@@ -1,11 +1,12 @@
 "use client";
 import Image from "next/image";
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { vapi } from "@/lib/vapi.sdk";
-import { set } from "zod";
+import { interviewer } from "@/constants";
+
 enum CallState {
   Active = "ACTIVE",
   Inactive = "INACTIVE",
@@ -28,6 +29,7 @@ const Agent = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callStatus, setCallStatus] = useState<CallState>(CallState.Inactive);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
+
   useEffect(() => {
     const onCallStart = () => setCallStatus(CallState.Active);
     const onCallEnd = () => setCallStatus(CallState.FINISHED);
@@ -79,6 +81,7 @@ const Agent = ({
       router.push("/");
     }
   };
+
   useEffect(() => {
     if (callStatus === CallState.FINISHED) {
       if (type === "generate") {
@@ -88,25 +91,44 @@ const Agent = ({
       }
     }
   }, [callStatus, messages, userId, type]);
+
   const handleCall = async () => {
     setCallStatus(CallState.Connecting);
 
-    await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID, {
-      variableValues: {
-        username: userName,
-        userid: userId,
-      },
-      clientMessages: [],
-      serverMessages: [],
-    });
+    if (type === "generate") {
+      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID, {
+        variableValues: {
+          username: userName,
+          userid: userId,
+        },
+        clientMessages: [],
+        serverMessages: [],
+      });
+    } else {
+      let formattedQuestions = "";
+      if (questions) {
+        formattedQuestions = questions
+          .map((question) => `- ${question}`)
+          .join("\n");
+      }
+      await vapi.start(interviewer, {
+        variableValues: {
+          questions: formattedQuestions,
+        },
+        clientMessages: [],
+        serverMessages: [],
+      });
+    }
   };
+
   const handleDisconnect = async () => {
     setCallStatus(CallState.FINISHED);
     vapi.stop();
   };
-  const latestMessage = messages[messages.length - 1]?.content;
+
   const isCallInactiveOrFinished =
     callStatus === CallState.Inactive || callStatus === CallState.FINISHED;
+  const latestMessage = messages[messages.length - 1]?.content;
   return (
     <>
       <div className="call-view">
@@ -130,8 +152,7 @@ const Agent = ({
               alt="User Avatar"
               width={120}
               height={120}
-              className="
-            rounded-full size -[120px] object-cover"
+              className="rounded-full size-[120px] object-cover"
             />
             <h3>{userName}</h3>
           </div>
@@ -144,7 +165,8 @@ const Agent = ({
             <p
               key={latestMessage}
               className={cn(
-                "transition-opacity duration-500 opacity-0, animate-fadeIn opacity-100"
+                "transition-opacity duration-500 opacity-0",
+                "animate-fadeIn opacity-100"
               )}
             >
               {latestMessage}
@@ -153,12 +175,12 @@ const Agent = ({
         </div>
       )}
       <div className="w-full flex justify-center">
-        {callStatus != "ACTIVE" ? (
+        {callStatus !== CallState.Active ? (
           <button className="btn-call" onClick={handleCall}>
             <span
               className={cn(
                 "absolute animate-ping rounded-full opacity-75",
-                callStatus !== "CONNECTING" && "hidden"
+                callStatus !== CallState.Connecting && "hidden"
               )}
             />
             <span>{isCallInactiveOrFinished ? "Call" : ". . ."}</span>
