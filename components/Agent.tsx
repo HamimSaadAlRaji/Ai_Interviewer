@@ -17,7 +17,13 @@ interface SavedMessage {
   content: string;
 }
 
-const Agent = ({ userName, userId, type }: AgentProps) => {
+const Agent = ({
+  userName,
+  userId,
+  type,
+  interviewId,
+  questions,
+}: AgentProps) => {
   const router = useRouter();
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callStatus, setCallStatus] = useState<CallState>(CallState.Inactive);
@@ -59,9 +65,27 @@ const Agent = ({ userName, userId, type }: AgentProps) => {
       vapi.off("error", onError);
     };
   }, []);
+
+  const handleGenerateFeedback = async (message: SavedMessage[]) => {
+    console.log("Generating feedback...");
+    const { success, id } = {
+      success: true,
+      id: "feedbackId",
+    };
+    if (success && id) {
+      router.push(`interview/${interviewId}/feedback`);
+    } else {
+      console.error("Error generating feedback");
+      router.push("/");
+    }
+  };
   useEffect(() => {
     if (callStatus === CallState.FINISHED) {
-      router.push("/");
+      if (type === "generate") {
+        router.push("/");
+      } else {
+        handleGenerateFeedback(messages);
+      }
     }
   }, [callStatus, messages, userId, type]);
   const handleCall = async () => {
