@@ -91,8 +91,8 @@ export async function signIn(params: SignInParams) {
 
 export async function getCurrentUser(): Promise<User | null> {
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("session")?.value;
 
+  const sessionCookie = cookieStore.get("session")?.value;
   if (!sessionCookie) return null;
 
   try {
@@ -101,20 +101,67 @@ export async function getCurrentUser(): Promise<User | null> {
       .collection("users")
       .doc(decodedClaims.uid)
       .get();
+    if (!userRecord.exists) return null;
 
-    if (!userRecord.exists) {
-      return null;
-    }
     return {
-      ...userRecord.data(),
       id: userRecord.id,
+      ...userRecord.data(),
     } as User;
-  } catch (e) {
-    console.error("Error getting current user:", e);
+  } catch (error) {
+    console.log(error);
     return null;
   }
 }
 export async function isAuthenticated() {
   const user = await getCurrentUser();
   return !!user;
+}
+
+export async function getInterviewsFromUserId(
+  userId: string
+): Promise<Interview[] | null> {
+  try {
+    const interviews = await db
+      .collection("interviews")
+      .where("userId", "==", userId)
+      .get();
+
+    if (interviews.empty) {
+      return null;
+    }
+
+    return interviews.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Interview[];
+  } catch (e) {
+    console.error("Error getting current user:", e);
+    return null;
+  }
+}
+export async function getLatestInterviews(
+  params: GetLatestInterviewsParams
+): Promise<Interview[] | null> {
+  try {
+    const { userId, limit = 20 } = params;
+    const interviews = await db
+      .collection("interviews")
+      .orderBy("createdAt", "desc")
+      .where("finalized", "==", true)
+      .where("userId", "!=", userId)
+      .limit(limit)
+      .get();
+
+    if (interviews.empty) {
+      return null;
+    }
+
+    return interviews.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Interview[];
+  } catch (e) {
+    console.error("Error getting current user:", e);
+    return null;
+  }
 }
